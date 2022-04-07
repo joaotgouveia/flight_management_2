@@ -1,31 +1,32 @@
-/* Tipos de Dados */
+/* Joao Gouveia - 102611
+ * File defining structs */
 
 typedef struct {
-	char id[MAX_CODIGO_AEROPORTO];
-	char pais[MAX_NOME_PAIS];
-	char cidade[MAX_NOME_CIDADE];
-	int numVoos;
-} Aeroporto;
+	char day[DAY];
+	char month[MONTH];
+	char year[YEAR];
+} Date;
 
 typedef struct {
-	int dia;
-	int mes;
-	int ano;
-} Data;
+	char hours[HOURS];
+	char mins[MINS];
+} Time;
 
 typedef struct {
-	int hora;
-	int minuto;
-} Hora;
+	char id[IDAP];
+	char country[COUNTRY];
+	char city[CITY];
+	int departures;
+} Airport;
 
 typedef struct {
-	char id[MAX_CODIGO_VOO];
-	char partida[MAX_CODIGO_AEROPORTO];
-	char chegada[MAX_CODIGO_AEROPORTO];
-	Data data;
-	Hora hora;
-	Hora duracao;
-	int capacidade;
-	int horaPartida;
-	int horaChegada;
-} Voo;
+	char id[IDFL];
+	char departure[IDAP];
+	char arrival[IDAP];
+	Date date;
+	Date arrDate;
+	Time time;
+	Time arrTime;
+	int duration[TUPLE];
+	int capacity;
+} Flight;
