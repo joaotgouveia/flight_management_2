@@ -8,6 +8,7 @@
 #include"limits.h"
 #include"structs.h"
 
+/* Project 1 functions */
 /* Airport sorting funtions */
 int less_ap(Airport aAirport1, Airport aAirport2);
 void quicksort_ap(int iFirst, int iLast);
@@ -49,6 +50,9 @@ void list_arr_or_dep(char* cId, int iMode);
 void arrivals(char* cId);
 void advance_date(char* arg);
 
+/* Project 2 functions */
+void list_bookings();
+
 /* Global variables */
 Airport aAirports[MAXAIRPORTS]; /* Airport array */
 Flight fFlights[MAXFLIGHTS]; /* Flight array */
@@ -89,6 +93,14 @@ int main () {
 				break;
 			case 't':
 				advance_date(arg+ARGSTART);
+				break;
+			case 'r':
+				if (strlen(arg) == 2) {
+					list_all_fl();
+				}
+				else {
+					add_fl(arg+ARGSTART);
+				}
 				break;
 		}
 	} while (arg[0] != 'q');
@@ -756,7 +768,7 @@ void add_fl(char* arg) {
 	strncpy(cCapacity, arg, CAPACITY-1);
 	cCapacity[CAPACITY-1] = '\0';
 	fNewFlight.capacity = atoi(cCapacity);
-	if(fNewFlight.capacity > 100 || fNewFlight.capacity < 10) {
+	if(fNewFlight.capacity < 10) {
 		printf("invalid capacity\n");
 		return;
 	}
@@ -811,4 +823,10 @@ void advance_date(char* arg) {
 	}
 	today = dNewToday;
 	printf("%s-%s-%s\n", today.day, today.month, today.year);
+}
+
+/* Start of second project */
+
+void list_bookings() {
+	
 }
