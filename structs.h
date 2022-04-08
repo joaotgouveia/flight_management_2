@@ -13,6 +13,11 @@ typedef struct {
 } Time;
 
 typedef struct {
+	char id[IDRES];
+	int size;
+} Reservation;
+
+typedef struct {
 	char id[IDAP];
 	char country[COUNTRY];
 	char city[CITY];
@@ -29,4 +34,6 @@ typedef struct {
 	Time arrTime;
 	int duration[TUPLE];
 	int capacity;
+	Reservation* reservations;
+	int currentReservations
 } Flight;
