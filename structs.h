@@ -13,9 +13,14 @@ typedef struct {
 } Time;
 
 typedef struct {
-	char id[IDRES];
+	char* id;
 	int size;
 } Reservation;
+
+typedef struct Node {
+	Reservation res;
+	struct Node* next;
+} * Link;
 
 typedef struct {
 	char id[IDAP];
@@ -34,6 +39,6 @@ typedef struct {
 	Time arrTime;
 	int duration[TUPLE];
 	int capacity;
-	Reservation* reservations;
-	int currentReservations
+	Link headRes;
+	int totRes;
 } Flight;
