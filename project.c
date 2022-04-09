@@ -5,7 +5,7 @@
 #include<stdlib.h>
 #include<string.h>
 #include<ctype.h>
-#include"limits.h"
+#include"const.h"
 #include"structs.h"
 
 /* Project 1 functions */
@@ -51,7 +51,8 @@ void arrivals(char* cId);
 void advance_date(char* arg);
 
 /* Project 2 functions */
-void list_bookings();
+void list_rs(char* arg);
+void add_rs(char* arg);
 
 /* Global variables */
 Airport aAirports[MAXAIRPORTS]; /* Airport array */
@@ -70,7 +71,7 @@ int main () {
 				add_ap(arg+ARGSTART);
 				break;
 			case 'l':
-				if (strlen(arg) == 2) {
+				if (strlen(arg) == ARGSTART) {
 					list_all_ap();
 				}
 				else {
@@ -78,7 +79,7 @@ int main () {
 				}
 				break;
 			case 'v':
-				if (strlen(arg) == 2) {
+				if (strlen(arg) == ARGSTART) {
 					list_all_fl();
 				}
 				else {
@@ -95,11 +96,11 @@ int main () {
 				advance_date(arg+ARGSTART);
 				break;
 			case 'r':
-				if (strlen(arg) == 2) {
-					list_all_fl();
+				if (strlen(arg) == ARGSTART+IDFL+DATE) {
+					list_rs(arg+ARGSTART);
 				}
 				else {
-					add_fl(arg+ARGSTART);
+					add_rs(arg+ARGSTART);
 				}
 				break;
 		}
@@ -825,8 +826,187 @@ void advance_date(char* arg) {
 	printf("%s-%s-%s\n", today.day, today.month, today.year);
 }
 
-/* Start of second project */
+/* --------------------- Start of second project ---------------------- */
 
-void list_bookings() {
-	
+/**
+ * Function: copy_linked_list
+ * --------------------
+ * Copies reservations from a
+ * linked list.
+ *
+ *  Return: void
+ **/
+void copy_linked_list(Reservation* rArray, Link head) {
+	int i = 0;
+	Link link;
+	for (link = head, i = 0; link != NULL; link = link->next, i++) {
+		rArray[i] = link->res;
+	}
+}
+
+/**
+ * Function: print_rs
+ * --------------------
+ * Prints a reservation.
+ *
+ *  Return: void
+ **/
+void print_rs(Reservation rRes) {
+	printf("%s %d\n", rRes.id, rRes.size); 
+}
+
+/**
+ * Function: less_rs
+ * --------------------
+ * Compares two reservations
+ * through their Id's.
+ *
+ *  Return: int
+ **/
+int less_rs(Reservation rReservation1, Reservation rReservation2) {
+	return strcmp(rReservation1.id, rReservation2.id) <= 0;
+}
+
+/**
+ * Function: swap_rs
+ * --------------------
+ * Swaps two reservations in 
+ * an array.
+ *
+ *  Return: void
+ **/
+void swap_rs(Reservation* rArray, int i, int j) {
+	Reservation rAux;
+	rAux = rArray[i];
+	rArray[i] = rArray[j];
+	rArray[j] = rAux;
+}
+
+/**
+ * Function: partition_rs
+ * --------------------
+ * Calculates and returns a partition
+ * for quicksort.
+ *
+ *  Return: int
+ **/
+int partition_rs(Reservation* rArray, int iFirst, int iLast) {
+	int iPivot = iFirst, i = iFirst, j = iLast;
+	while (i < j) {
+		while (less_rs(rArray[i], rArray[iPivot]) && i < iLast) {
+			i++;
+		}
+		while (!less_rs(rArray[j], rArray[iPivot])) {
+			j--;
+		}
+		if (i < j) {
+			swap_rs(rArray, i, j);
+		}
+	}
+	swap_rs(rArray, iPivot, j);
+	return j;
+}
+
+/**
+ * Function: quicksort_rs
+ * --------------------
+ *  Quicksort sorting algorithm
+ *  applied to reservation struct.
+ *
+ *  Return: void
+ **/
+void quicksort_rs(Reservation* rArray, int iFirst, int iLast) {
+	int iPartition;
+	if (iFirst < iLast) {
+		iPartition = partition_rs(rArray, iFirst, iLast);
+		quicksort_rs(rArray, iFirst, iPartition-1);
+		quicksort_rs(rArray, iPartition+1, iLast);
+	}
+}
+
+/**
+ * Function: read_fl
+ * --------------------
+ * Reads a flight id
+ * from a string and
+ * advances de arg pointer
+ * to the next word.
+ *
+ *  Return: void
+ **/
+void read_fl(char* cId, char* arg) {
+	int i;
+	for (i = 0; arg[i] != ' '; i++) {
+		cId[i] = arg[i];
+	}	
+	cId[i] = '\0';
+	arg += i+1;
+}
+
+/**
+ * Function: find_fl
+ * --------------------
+ * Finds a Flight in fFlights
+ * and returns its index. Returns
+ * NOTFOUND if the flight doesn't
+ * exist.
+ *
+ *  Return: int
+ **/
+int find_fl(char cId[IDFL], Date dDate) {
+	int i;
+	for (i = 0; i < iCurrentFlights; i++) {
+		if (strcmp(cId, fFlights[i].id) == 0 && same_date(dDate, fFlights[i].date)) {
+			return i;
+		}
+	}
+	return NOTFOUND;
+}
+
+
+/**
+ * Function: list_rs
+ * --------------------
+ * Lists all reservations
+ * from a flight.
+ *
+ *  Return: void
+ **/
+void list_rs(char* arg) {
+	char cId[IDFL];
+	Date dDate;
+	int i, iInd, iRes;
+	Reservation* rArray;
+	read_fl(cId, arg);
+	read_date(&dDate, arg);
+	iInd = find_fl(cId, dDate);
+	if (iInd == NOTFOUND) {
+		printf("%s: flight does not exist\n", cId);
+		return;
+	}
+	if (invalid_date(dDate)) {
+		printf("invalid date\n");
+		return;
+	}
+	iRes = fFlights[iInd].totRes;
+	rArray = (Reservation*) malloc(sizeof(Reservation)*iRes);
+	copy_linked_list(rArray, fFlights[iInd].headRes);
+	quicksort_rs(rArray, 0, iRes);
+	for (i = 0; i < iRes; i++) {
+		print_rs(rArray[i]);
+	}
+	free(rArray);
+}
+
+/**
+ * Function: add_rs
+ * --------------------
+ * Adds a reservation to
+ * a flight.
+ *
+ *  Return: void
+ **/
+void add_rs(char* arg) {
+	char *cIdFL, *cIdRS;
+	int 
 }
