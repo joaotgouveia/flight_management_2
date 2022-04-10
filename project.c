@@ -1007,6 +1007,8 @@ void list_rs(char* arg) {
  *  Return: void
  **/
 void add_rs(char* arg) {
-	char *cIdFL, *cIdRS;
-	int 
+	char *cIdFL, *cIdRS, cPassengers;
+	int iPassengers, iIdSize, iArgSize = strlen(arg);
+	for (iIdSize; arg[iIdSize] != ' '; iIdSize++);
 }
+
