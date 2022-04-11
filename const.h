@@ -10,8 +10,6 @@
 #define MAXFLIGHTS 30000
 #define IDFL 7
 #define CAPACITY 4
-/* Reservation related values */
-#define IDRES 65532 /* Max arg size minus flags and a single integer for capacity */
 /* Time and date related values */
 #define HOURS 3
 #define MINS 3
