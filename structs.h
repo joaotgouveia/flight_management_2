@@ -18,9 +18,10 @@ typedef struct {
 } Reservation;
 
 typedef struct Node {
-	Reservation res;
+	Reservation* res;
 	struct Node* next;
-} * Link;
+} *Link;
+typedef struct Node Node;
 
 typedef struct {
 	char id[IDAP];
@@ -41,4 +42,5 @@ typedef struct {
 	int capacity;
 	Link headRes;
 	int totRes;
+	int listLen;
 } Flight;
