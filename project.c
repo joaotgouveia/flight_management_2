@@ -50,61 +50,11 @@ void list_arr_or_dep(char* cId, int iMode);
 void arrivals(char* cId);
 void advance_date(char* arg);
 
-/* Project 2 functions */
-void free_flights();
-void manage_reservations(char* arg);
-void list_rs(Link lHead, int iLenght);
-void add_rs(char* arg, int iInvalidFl, int iInd, Date dDate, int iOffset);
-
 /* Global variables */
 Airport aAirports[MAXAIRPORTS]; /* Airport array */
 Flight fFlights[MAXFLIGHTS]; /* Flight array */
 int iCurrentAirports, iCurrentFlights; /* Airport and flight counters */
 Date today = {"01", "01", "2022"}; /* Program starting date */
-
-int main () {
-	char arg[ARGSIZE];
-	do {
-		fgets(arg, sizeof(char)*ARGSIZE, stdin);
-		switch (arg[0]) {
-			case 'q':
-				break;
-			case 'a':
-				add_ap(arg+ARGSTART);
-				break;
-			case 'l':
-				if (strlen(arg) == ARGSTART) {
-					list_all_ap();
-				}
-				else {
-					list_ap(arg+ARGSTART);
-				}
-				break;
-			case 'v':
-				if (strlen(arg) == ARGSTART) {
-					list_all_fl();
-				}
-				else {
-					add_fl(arg+ARGSTART);
-				}
-				break;
-			case 'p':
-				list_arr_or_dep(arg+ARGSTART, FALSE);
-				break;
-			case 'c':
-				list_arr_or_dep(arg+ARGSTART, TRUE);
-				break;
-			case 't':
-				advance_date(arg+ARGSTART);
-				break;
-			case 'r':
-				manage_reservations(arg+ARGSTART);
-				break;
-		}
-	} while (arg[0] != 'q');
-	/*free_flights();*/
-	return 0;
-}
 
 /**
  * Function: less_ap
@@ -832,13 +782,21 @@ void advance_date(char* arg) {
 
 /* --------------------- Start of second project ---------------------- */
 
-Link new_link(char* cIdRes, int iResSize) {
-	int iSize = strlen(cIdRes)+1;
+/**
+ * Function: new_link
+ * --------------------
+ * Creates a new link
+ * for the reservations
+ * linked list.
+ *
+ *  Return: void
+ **/
+Link new_link(char* cIdRes, int iIdLen, int iResSize) {
 	Link link = (Link) malloc(sizeof(Node));
 	link->res = (Reservation*) malloc(sizeof(Reservation));
-	link->res->id = (char*) malloc(sizeof(char)*iSize);
-	strncpy(link->res->id, cIdRes, iSize-1);
-	link->res->id[iSize-1] = '\0';
+	link->res->id = (char*) malloc(sizeof(char)*(iIdLen+1));
+	strncpy(link->res->id, cIdRes, iIdLen);
+	link->res->id[iIdLen] = '\0';
 	link->res->size = iResSize;
 	link->next = NULL;
 	return link;
@@ -855,8 +813,9 @@ Link new_link(char* cIdRes, int iResSize) {
 void copy_linked_list(Reservation* rArray, Link head) {
 	int i = 0;
 	Link link;
-	for (link = head, i = 0; link != NULL; link = link->next, i++)
+	for (link = head, i = 0; link != NULL; link = link->next, i++) {
 		rArray[i] = *link->res;
+	}
 }
 
 /**
@@ -869,6 +828,8 @@ void copy_linked_list(Reservation* rArray, Link head) {
  **/
 Link get_tail(Link head) {
 	Link tail;
+	if (head == NULL)
+		return NULL;
 	for (tail = head; tail->next != NULL; tail = tail->next);
 	return tail;
 }
@@ -924,10 +885,10 @@ void swap_rs(Reservation* rArray, int i, int j) {
 int partition_rs(Reservation* rArray, int iFirst, int iLast) {
 	int iPivot = iFirst, i = iFirst, j = iLast;
 	while (i < j) {
-		while (less_rs(rArray[++i], rArray[iPivot]))
-			if (i == iLast)
-				break;
-		while (!less_rs(rArray[--j], rArray[iPivot]));
+		while (less_rs(rArray[i], rArray[iPivot]) && i < iLast)
+			i++;
+		while (!less_rs(rArray[j], rArray[iPivot]))
+			j--;
 		if (i < j)
 			swap_rs(rArray, i, j);
 	}
@@ -1037,9 +998,7 @@ void free_flights() {
  **/
 Link find_rs(Link head, char* cId) {
 	Link link;
-	if (head == NULL)
-		return NULL;
-	for (link = head; link->next != NULL; link = link->next)
+	for (link = head; link != NULL; link = link->next)
 		if (strcmp(link->res->id, cId) == 0)
 			return link;
 	return NULL;
@@ -1062,6 +1021,23 @@ int invalid_idrs(char cIdChar) {
 }
 
 /**
+ * Function: used_idfl
+ * --------------------
+ * Checks if a reservation
+ * ID was already used in
+ * a flight.
+ *
+ *  Return: int
+ **/
+int used_idfl(Flight fFlight, char* cId) {
+	if (find_rs(fFlight.headRes, cId) != NULL) {
+		printf("%s: flight reservation already used\n", cId);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+/**
  * Function: used_id
  * --------------------
  * Checks if a reservation
@@ -1069,67 +1045,126 @@ int invalid_idrs(char cIdChar) {
  *
  *  Return: int
  **/
-int used_id(Flight fFlight, char* cId) {
-	if (find_rs(fFlight.headRes, cId) != NULL) {
-		printf("%s: flight reservation already used\n", cId);
-		return TRUE;
+int used_id(char* arg, int iIdLen) {
+	int i, iStatus = FALSE;
+	char* cId = (char*) malloc(sizeof(char)*(iIdLen+1));
+	strncpy(cId, arg, iIdLen);
+	cId[iIdLen] = '\0';
+	for (i = 0; i < iCurrentFlights; i++) {
+		if (used_idfl(fFlights[i], cId)) {
+			iStatus = TRUE;
+			break;
+		}
 	}
-	return FALSE;
+	free(cId);
+	return iStatus;
 }
+
 /**
- * Function: invalid_size
+ * Function: invalid_passengers
  * --------------------
  * Checks if a reservation
  * exceeds the flight capacity.
  *
  *  Return: int
  **/
-int invalid_size(Flight fFlight, int iResSize) {
+int invalid_passengers(Flight fFlight, int iResSize) {
 	if (iResSize + fFlight.totRes > fFlight.capacity) {
-		printf("invalid reservation code\n");
+		printf("too many reservations\n");
 		return TRUE;
 	}
 	return FALSE;
 }
+
 /**
- * Function: invalid_flight
+ * Function: valid_fl
  * --------------------
- * Checs if a flight ID and it's
+ * Checks if a flight is invalid
+ * and handles printing the error message.
+ *
+ *  Return: int
+ **/
+int valid_fl(char* cId, int iValidFl) {
+	if (!iValidFl) {
+		printf("%s: flight does not exist\n", cId);
+		return FALSE;
+	}
+	return TRUE;
+}
+
+/**
+ * Function: check_flight
+ * --------------------
+ * Checks if a flight ID and it's
  * date are valid. Stores it's index
  * in fFlights in iInd and it's
  * date in dDate.
  *
  *  Return: int
  **/
-int invalid_flight(char* cId, int* iInd, Date* dDate, int* iOffset, char* arg) {
+int check_flight(char* cId, int* iInd, Date* dDate, int* iOffset, char* arg) {
 	*iOffset = read_fl(cId, arg);
 	arg += *iOffset;
 	read_date(dDate, arg);
 	*iOffset += DATE;
 	*iInd = find_fl(cId, *dDate);
 	if (*iInd == NOTFOUND) {
-		return TRUE;
+		return FALSE;
 	}
-	return FALSE;
+	return TRUE;
 }
 
-void manage_reservations(char* arg) {
-	int iInd, iOffset, iInvalidFl;
-	char cIdFl[IDFL];
-	Date dDate;
-	iInvalidFl = invalid_flight(cIdFl, &iInd, &dDate, &iOffset, arg);
-	if (strlen(arg) == iOffset) {
-		if (iInvalidFl) {
-			printf("%s\n", cIdFl);
-			return;
-		}
-		if (invalid_date(dDate))
-			return;
-		list_rs(fFlights[iInd].headRes, fFlights[iInd].listLen);
+/**
+ * Function: check_idrs
+ * --------------------
+ * Checks if a reservation ID
+ * is valid. Stores it's size
+ * in iSize.
+ *
+ *  Return: int
+ **/
+int check_idrs(int* iSize, char* arg) {
+	for (*iSize = 0; arg[*iSize] != ' ' && arg[*iSize] != '\t'; (*iSize)++)
+		if (invalid_idrs(arg[*iSize]))
+			return FALSE;
+	if (*iSize < 10) {
+		printf("invalid reservation code\n");
+		return FALSE;
 	}
-	else {
+	return TRUE;
+}
 
+/**
+ * Function: check_passengers
+ * --------------------
+ * Checks if a flight allows
+ * the desired number of passengers.
+ * Stores the number of passengers
+ * in iPassengers.
+ *
+ *  Return: int
+ **/
+int check_passengers(int* iPassengers, Flight fFlight, char* arg) {
+	*iPassengers = atoi(arg);
+	if (invalid_passengers(fFlight, *iPassengers))
+		return FALSE;
+	return TRUE;
+}
+
+/**
+ * Function: check_size
+ * --------------------
+ * Checks checks if the provided
+ * size is a positive integer.
+ *
+ *  Return: int
+ **/
+int check_size(int iSize) {
+	if (iSize < 0) {
+		printf("invalid passenger number\n");
+		return FALSE;
 	}
+	return TRUE;
 }
 
 /**
@@ -1141,69 +1176,141 @@ void manage_reservations(char* arg) {
  *  Return: void
  **/
 void list_rs(Link lHead, int iLenght) {
-	int i = 0;
+	int i;
 	Reservation* rArray;
-	if (lHead == NULL)
+	if (lHead == NULL){
 		return;
+	}
 	rArray = (Reservation*) malloc(sizeof(Reservation)*iLenght);
 	copy_linked_list(rArray, lHead);
-	quicksort_rs(rArray, 0, iLenght);
-	while (++i < iLenght)
+	quicksort_rs(rArray, 0, iLenght-1);
+	for (i = 0; i < iLenght; i++)
 		print_rs(rArray[i]);
-	free(rArray);
+}
+
+/**
+ * Function: new_rs
+ * --------------------
+ * Creates a new reservation
+ * and adds it to a flight.
+ *
+ *  Return: void
+ **/
+void new_rs(int iIndex, char* cId, int iIdLen, int iPassengers) {
+	Link lTail, lNewLink;
+	lNewLink = new_link(cId, iIdLen, iPassengers);
+	fFlights[iIndex].totRes += lNewLink->res->size;
+	fFlights[iIndex].listLen++;
+	if (fFlights[iIndex].headRes == NULL) {
+		fFlights[iIndex].headRes = lNewLink;
+		return;
+	}
+	lTail = get_tail(fFlights[iIndex].headRes);
+	lTail->next = lNewLink;
+}
+
+/**
+ * Function: show_rs
+ * --------------------
+ * Checks user input,
+ * creates a new reservation
+ * and adds it to a flight.
+ *
+ *  Return: void
+ **/
+void show_rs(int iValidFl, int iIndex, char* cIdFl, Date dDate) {
+	if (!valid_fl(cIdFl, iValidFl))
+		return;
+	if (invalid_date(dDate))
+		return;
+	list_rs(fFlights[iIndex].headRes, fFlights[iIndex].listLen);
 }
 
 /**
  * Function: add_rs
  * --------------------
- * Adds a reservation to
- * a flight.
+ * Checks user input,
+ * creates a new reservation
+ * and adds it to a flight.
  *
  *  Return: void
  **/
-void add_rs(char* arg, int iInvalidFl, int iInd, Date dDate, int iOffset) {
-	Link lTail, lNewLink;
-	char* cPassengers;
-	int iIdSize, iArgSize;
-	for (iIdSize = 0; arg[iIdSize] != ' ' && arg[iIdSize] != '\t'; iIdSize++)
-		if (invalid_idrs(arg[iIdSize]))
-			return;
-	if (iIdSize < 10) {
-		printf("invalid reservation code\n");
+void add_rs(int iValidFl, int iIndex, char* cIdFl, Date dDate, char* arg) {
+	int iIdLen, iPassengers;
+	if (!check_idrs(&iIdLen, arg))
 		return;
-	}
-	if (iInvalidFl)
+	if (!valid_fl(cIdFl, iValidFl))
 		return;
-	arg += iOffset;
-	iIdSize++;
-	iArgSize = strlen(arg)-iIdSize;
-	cPassengers = (char*) malloc(sizeof(char)*(iArgSize+1));
-	strncpy(cPassengers, arg+iIdSize, iArgSize);
-	lNewLink = new_link(arg, atoi(cPassengers));
-	free(cPassengers);
-	if (used_id(fFlights[iInd], lNewLink->res->id)) {
-		free_link(lNewLink);
+	if (used_id(arg, iIdLen))
 		return;
-	}
-	if (invalid_size(fFlights[iInd], lNewLink->res->size)){
-		free_link(lNewLink);
+	if (!check_passengers(&iPassengers, fFlights[iIndex], arg+iIdLen+1))
 		return;
-	}
-	if (invalid_date(dDate)) {
-		free_link(lNewLink);
+	if (invalid_date(dDate))
 		return;
-	}
-	if (lNewLink->res->size < 0) {
-		printf("invalid passenger number\n");
-		free_link(lNewLink);
+	if (!check_size(iPassengers))
 		return;
-	}
-	fFlights[iInd].totRes += lNewLink->res->size;
-	fFlights[iInd].listLen++;
-	if (fFlights[iInd].headRes == NULL) {
-		fFlights[iInd].headRes = lNewLink;
-		return;
-	}
-	lTail = get_tail(fFlights[iInd].headRes);
-	lTail->next = lNewLink;
+	new_rs(iIndex, arg, iIdLen, iPassengers);
+}
+
+/**
+ * Function: manage_reservations
+ * --------------------
+ * Lists all the reservations
+ * of a flight or adds a new one.
+ *
+ *  Return: void
+ **/
+void manage_reservations(char* arg) {
+	int iInd, iOffset, iValidFl, iArgLen = strlen(arg);
+	char cIdFl[IDFL];
+	Date dDate;
+	iValidFl = check_flight(cIdFl, &iInd, &dDate, &iOffset, arg);
+	if (iArgLen == iOffset)
+		show_rs(iValidFl, iInd, cIdFl, dDate);
+	else
+		add_rs(iValidFl, iInd, cIdFl, dDate, arg+iOffset);
+}
+
+int main () {
+	char arg[ARGSIZE];
+	do {
+		fgets(arg, sizeof(char)*ARGSIZE, stdin);
+		switch (arg[0]) {
+			case 'q':
+				break;
+			case 'a':
+				add_ap(arg+ARGSTART);
+				break;
+			case 'l':
+				if (strlen(arg) == ARGSTART) {
+					list_all_ap();
+				}
+				else {
+					list_ap(arg+ARGSTART);
+				}
+				break;
+			case 'v':
+				if (strlen(arg) == ARGSTART) {
+					list_all_fl();
+				}
+				else {
+					add_fl(arg+ARGSTART);
+				}
+				break;
+			case 'p':
+				list_arr_or_dep(arg+ARGSTART, FALSE);
+				break;
+			case 'c':
+				list_arr_or_dep(arg+ARGSTART, TRUE);
+				break;
+			case 't':
+				advance_date(arg+ARGSTART);
+				break;
+			case 'r':
+				manage_reservations(arg+ARGSTART);
+				break;
+		}
+	} while (arg[0] != 'q');
+	/*free_flights();*/
+	return 0;
 }
