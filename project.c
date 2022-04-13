@@ -1272,6 +1272,65 @@ void manage_reservations(char* arg) {
 		add_rs(iValidFl, iInd, cIdFl, dDate, arg+iOffset);
 }
 
+/**
+ * Function: remove_rs
+ * --------------------
+ * Removes a reservation from
+ * a given linked list.
+ * Returns true if it was successeful
+ * removing it.
+ *
+ *  Return: int
+ **/
+int remove_rs(Link head, char* cId) {
+	Link link, prev;
+	if (head == NULL)
+		return FALSE;
+	for (link = head, prev = NULL; link != NULL; prev = link, link = link->next) {
+		if (strcmp(link->res->id, cId) == 0) {
+			if (link == head) {
+				head = head->next;
+			}
+			else {
+				prev->next = link->next;
+			}
+			free_link(link);
+			return TRUE;
+		}  
+	}
+	return FALSE;
+}
+
+/**
+ * Function: delete_rs
+ * --------------------
+ * Finds and deletes a reservation.
+ *
+ *  Return: void
+ **/
+void delete_rs(char* cId) {
+	int i;
+	for (i = 0; i < iCurrentAirports; i++)
+		if (remove_rs(fFlights[i].headRes, cId))
+			return;
+	printf("not found");
+}
+
+/**
+ * Function: delete_fl_or_rs
+ * --------------------
+ * Deletes a flight or a reservation.
+ *
+ *  Return: void
+ **/
+void delete_fl_or_rs(char* cId) {
+	int iLen = strlen(cId);
+	if (iLen < 10)
+		delete_fl(cId);
+	else
+		delete_rs(cId);
+}
+
 int main () {
 	char arg[ARGSIZE];
 	do {
