@@ -813,9 +813,8 @@ Link new_link(char* cIdRes, int iIdLen, int iResSize) {
 void copy_linked_list(Reservation* rArray, Link head) {
 	int i = 0;
 	Link link;
-	for (link = head, i = 0; link != NULL; link = link->next, i++) {
+	for (link = head, i = 0; link != NULL; link = link->next, i++)
 		rArray[i] = *link->res;
-	}
 }
 
 /**
@@ -958,9 +957,7 @@ int find_fl(char cId[IDFL], Date dDate) {
 void free_link(Link lLink) {
 	free(lLink->res->id);
 	free(lLink->res);
-	free(lLink->next);
 	free(lLink);
-	lLink = NULL;
 }
 
 /**
@@ -970,9 +967,13 @@ void free_link(Link lLink) {
  *
  *  Return: void
  **/
-void free_all(Link lHead) {
-	while (lHead != NULL)
-		free_link(get_tail(lHead));
+void free_all(Link head) {
+	Link link, prev;
+	if (head == NULL)
+		return;
+	for (link = head->next, prev = head; link != NULL; prev = link, link = link->next)
+		free_link(prev);
+	free_link(prev);
 }
 
 /**
@@ -1311,6 +1312,6 @@ int main () {
 				break;
 		}
 	} while (arg[0] != 'q');
-	/*free_flights();*/
+	free_flights();
 	return 0;
 }
