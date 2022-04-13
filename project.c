@@ -1277,8 +1277,8 @@ void manage_reservations(char* arg) {
  * --------------------
  * Removes a reservation from
  * a given linked list.
- * Returns true if it was successeful
- * removing it.
+ * Returns true if it was
+ * successeful removing it.
  *
  *  Return: int
  **/
