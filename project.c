@@ -1407,41 +1407,30 @@ int main () {
 	do {
 		fgets(arg, sizeof(char)*ARGSIZE, stdin);
 		switch (arg[0]) {
-			case 'q':
-				break;
-			case 'a':
-				add_ap(arg+ARGSTART);
+			case 'q': break;
+			case 'a': add_ap(arg+ARGSTART);
 				break;
 			case 'l':
-				if (strlen(arg) == ARGSTART) {
+				if (strlen(arg) == ARGSTART)
 					list_all_ap();
-				}
-				else {
+				else
 					list_ap(arg+ARGSTART);
-				}
 				break;
 			case 'v':
-				if (strlen(arg) == ARGSTART) {
+				if (strlen(arg) == ARGSTART)
 					list_all_fl();
-				}
-				else {
+				else
 					add_fl(arg+ARGSTART);
-				}
 				break;
-			case 'p':
-				list_arr_or_dep(arg+ARGSTART, FALSE);
+			case 'p': list_arr_or_dep(arg+ARGSTART, FALSE);
 				break;
-			case 'c':
-				list_arr_or_dep(arg+ARGSTART, TRUE);
+			case 'c': list_arr_or_dep(arg+ARGSTART, TRUE);
 				break;
-			case 't':
-				advance_date(arg+ARGSTART);
+			case 't': advance_date(arg+ARGSTART);
 				break;
-			case 'r':
-				manage_reservations(arg+ARGSTART);
+			case 'r': manage_reservations(arg+ARGSTART);
 				break;
-			case 'e':
-				delete_fl_or_rs(arg+ARGSTART);
+			case 'e': delete_fl_or_rs(arg+ARGSTART);
 				break;
 		}
 	} while (arg[0] != 'q');
