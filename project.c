@@ -1282,22 +1282,21 @@ void manage_reservations(char* arg) {
  *
  *  Return: int
  **/
-int remove_rs(Link head, char* cId) {
+int remove_rs(Flight* fFlight, char* cId) {
 	Link link, prev;
-	if (head == NULL)
+	if (fFlight->headRes == NULL)
 		return FALSE;
-	for (link = head, prev = NULL; link != NULL; prev = link, link = link->next) {
+	for (link = fFlight->headRes, prev = NULL; link != NULL; prev = link, link = link->next)
 		if (strcmp(link->res->id, cId) == 0) {
-			if (link == head) {
-				head = head->next;
-			}
-			else {
+			if (link == fFlight->headRes)
+				fFlight->headRes = fFlight->headRes->next;
+			else
 				prev->next = link->next;
-			}
+			fFlight->totRes -= link->res->size;
+			fFlight->listLen--;
 			free_link(link);
 			return TRUE;
 		}  
-	}
 	return FALSE;
 }
 
@@ -1311,7 +1310,7 @@ int remove_rs(Link head, char* cId) {
 void delete_rs(char* cId) {
 	int i;
 	for (i = 0; i < iCurrentFlights; i++)
-		if (remove_rs(fFlights[i].headRes, cId))
+		if (remove_rs(fFlights+i, cId))
 			return;
 	printf("not found\n");
 }
@@ -1328,7 +1327,7 @@ void delete_rs(char* cId) {
  **/
 int find_flid(int* i, char* cId) {
 	for (*i = 0; *i < iCurrentFlights; (*i)++)
-		if (strcmp(fFlights[*i].id, cId))
+		if (strcmp(fFlights[*i].id, cId) == 0)
 			return TRUE;
 	return FALSE;
 }
@@ -1359,8 +1358,10 @@ void remove_fl(int iIndex) {
  **/
 void delete_fl(char* cId) {
 	int i;
-	if (!find_flid(&i, cId))
+	if (!find_flid(&i, cId)) {
 		printf("not found\n");
+		return;
+	}
 	do
 		remove_fl(i);
 	while (find_flid(&i, cId));
@@ -1374,7 +1375,7 @@ void delete_fl(char* cId) {
  *  Return: void
  **/
 void delete_fl_or_rs(char* cId) {
-	int iLen = strlen(cId);
+	int iLen = strlen(cId) - 1;
 	cId[iLen] = '\0';
 	if (iLen < 10)
 		delete_fl(cId);
