@@ -664,7 +664,6 @@ void list_all_fl() {
  **/
 void add_fl(char* arg) {
 	int i, iDepartureIndex, iOffset;
-	char cCapacity[CAPACITY];
 	Flight fNewFlight;
 	for (i = 0; arg[i] != ' '; i++) {
 		if (invalid_idfl(arg[i], i)) {
@@ -717,9 +716,7 @@ void add_fl(char* arg) {
 	}
 	arg += iOffset;
 	/* Checking if capacity is valid */
-	strncpy(cCapacity, arg, CAPACITY-1);
-	cCapacity[CAPACITY-1] = '\0';
-	fNewFlight.capacity = atoi(cCapacity);
+	fNewFlight.capacity = atoi(arg);
 	if(fNewFlight.capacity < 10) {
 		printf("invalid capacity\n");
 		return;
