@@ -1205,6 +1205,7 @@ void list_rs(Link lHead, int iLenght) {
 	quicksort_rs(rArray, 0, iLenght-1);
 	for (i = 0; i < iLenght; i++)
 		print_rs(rArray[i]);
+	free(rArray);
 }
 
 /**
