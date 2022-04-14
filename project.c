@@ -1189,16 +1189,15 @@ int check_size(int iSize) {
  *
  *  Return: void
  **/
-void list_rs(Link lHead, int iLenght) {
+void list_rs(Link lHead, int iLen) {
 	int i;
 	Reservation* rArray;
-	if (lHead == NULL){
+	if (lHead == NULL)
 		return;
-	}
-	rArray = (Reservation*) check_mem(sizeof(Reservation)*iLenght);
+	rArray = (Reservation*) check_mem(sizeof(Reservation)*iLen);
 	copy_linked_list(rArray, lHead);
-	quicksort_rs(rArray, 0, iLenght-1);
-	for (i = 0; i < iLenght; i++)
+	quicksort_rs(rArray, 0, iLen-1);
+	for (i = 0; i < iLen; i++)
 		print_rs(rArray[i]);
 	free(rArray);
 }
@@ -1437,6 +1436,4 @@ int main () {
  * ta na funcao pa listar as reservas. se der wrong answer pode ser por esse malloc desnecessario
  * exceder o limite de memoria que posso usar. bom teste e tirar o memcheck e ver se o erro passa
  * a segmentation error */
-
-
 
