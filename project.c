@@ -884,8 +884,6 @@ void copy_linked_list(Reservation* rArray, Link head) {
  **/
 Link get_tail(Link head) {
 	Link tail;
-	if (head == NULL)
-		return NULL;
 	for (tail = head; tail->next != NULL; tail = tail->next);
 	return tail;
 }
