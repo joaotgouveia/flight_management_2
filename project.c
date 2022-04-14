@@ -781,6 +781,66 @@ void advance_date(char* arg) {
 }
 
 /* --------------------- Start of second project ---------------------- */
+/**
+ * Function: free_link
+ * --------------------
+ * Frees a link.
+ *
+ *  Return: void
+ **/
+void free_link(Link lLink) {
+	free(lLink->res->id);
+	free(lLink->res);
+	free(lLink);
+}
+
+/**
+ * Function: free_all
+ * --------------------
+ * Frees an entire linked list.
+ *
+ *  Return: void
+ **/
+void free_all(Link head) {
+	Link link, prev;
+	if (head == NULL)
+		return;
+	for (link = head->next, prev = head; link != NULL; prev = link, link = link->next)
+		free_link(prev);
+	free_link(prev);
+}
+
+/**
+ * Function: free_flights
+ * --------------------
+ * Frees fFlights.
+ *
+ *  Return: void
+ **/
+void free_flights() {
+	int i;
+	for (i = 0; i < iCurrentFlights; i++)
+		free_all(fFlights[i].headRes);
+}
+
+/**
+ * Function: check_mem
+ * --------------------
+ * Checks for available memory
+ * before allocating.
+ *
+ *  Return: void
+ **/
+void* check_mem(int iSize) {
+	void* ptr = malloc(iSize);
+	if (ptr == NULL) {
+		printf("no memory\n");
+		free(ptr);
+		free_flights();
+		exit(0);
+	}
+	return ptr;
+}
 
 /**
  * Function: new_link
@@ -792,9 +852,9 @@ void advance_date(char* arg) {
  *  Return: void
  **/
 Link new_link(char* cIdRes, int iIdLen, int iResSize) {
-	Link link = (Link) malloc(sizeof(Node));
-	link->res = (Reservation*) malloc(sizeof(Reservation));
-	link->res->id = (char*) malloc(sizeof(char)*(iIdLen+1));
+	Link link = (Link) check_mem(sizeof(Node));
+	link->res = (Reservation*) check_mem(sizeof(Reservation));
+	link->res->id = (char*) check_mem(sizeof(char)*(iIdLen+1));
 	strncpy(link->res->id, cIdRes, iIdLen);
 	link->res->id[iIdLen] = '\0';
 	link->res->size = iResSize;
@@ -948,48 +1008,6 @@ int find_fl(char cId[IDFL], Date dDate) {
 }
 
 /**
- * Function: free_link
- * --------------------
- * Frees a link.
- *
- *  Return: void
- **/
-void free_link(Link lLink) {
-	free(lLink->res->id);
-	free(lLink->res);
-	free(lLink);
-}
-
-/**
- * Function: free_all
- * --------------------
- * Frees an entire linked list.
- *
- *  Return: void
- **/
-void free_all(Link head) {
-	Link link, prev;
-	if (head == NULL)
-		return;
-	for (link = head->next, prev = head; link != NULL; prev = link, link = link->next)
-		free_link(prev);
-	free_link(prev);
-}
-
-/**
- * Function: free_flights
- * --------------------
- * Frees fFlights.
- *
- *  Return: void
- **/
-void free_flights() {
-	int i;
-	for (i = 0; i < iCurrentFlights; i++)
-		free_all(fFlights[i].headRes);
-}
-
-/**
  * Function: find_rs
  * --------------------
  * Finds the reservation
@@ -1048,7 +1066,7 @@ int used_idfl(Flight fFlight, char* cId) {
  **/
 int used_id(char* arg, int iIdLen) {
 	int i, iStatus = FALSE;
-	char* cId = (char*) malloc(sizeof(char)*(iIdLen+1));
+	char* cId = (char*) check_mem(sizeof(char)*(iIdLen+1));
 	strncpy(cId, arg, iIdLen);
 	cId[iIdLen] = '\0';
 	for (i = 0; i < iCurrentFlights; i++) {
@@ -1182,7 +1200,7 @@ void list_rs(Link lHead, int iLenght) {
 	if (lHead == NULL){
 		return;
 	}
-	rArray = (Reservation*) malloc(sizeof(Reservation)*iLenght);
+	rArray = (Reservation*) check_mem(sizeof(Reservation)*iLenght);
 	copy_linked_list(rArray, lHead);
 	quicksort_rs(rArray, 0, iLenght-1);
 	for (i = 0; i < iLenght; i++)
@@ -1429,3 +1447,11 @@ int main () {
 	free_flights();
 	return 0;
 }
+
+/* Atencao ao malloc do array de reservas substituido por check mem.
+ * ta na funcao pa listar as reservas. se der wrong answer pode ser por esse malloc desnecessario
+ * exceder o limite de memoria que posso usar. bom teste e tirar o memcheck e ver se o erro passa
+ * a segmentation error */
+
+
+
