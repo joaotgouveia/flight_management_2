@@ -1435,5 +1435,5 @@ int main () {
 /* Atencao ao malloc do array de reservas substituido por check mem.
  * ta na funcao pa listar as reservas. se der wrong answer pode ser por esse malloc desnecessario
  * exceder o limite de memoria que posso usar. bom teste e tirar o memcheck e ver se o erro passa
- * a segmentation error */
+ * a segmentation fault */
 
