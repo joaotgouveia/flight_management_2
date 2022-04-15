@@ -840,7 +840,7 @@ void* check_mem(int iSize) {
 		printf("no memory\n");
 		free(ptr);
 		free_flights();
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 	return ptr;
 }
@@ -1070,12 +1070,11 @@ int used_id(char* arg, int iIdLen) {
 	char* cId = (char*) check_mem(sizeof(char)*(iIdLen+1));
 	strncpy(cId, arg, iIdLen);
 	cId[iIdLen] = '\0';
-	for (i = 0; i < iCurrentFlights; i++) {
+	for (i = 0; i < iCurrentFlights; i++)
 		if (used_idfl(fFlights[i], cId)) {
 			iStatus = TRUE;
 			break;
 		}
-	}
 	free(cId);
 	return iStatus;
 }
@@ -1180,11 +1179,10 @@ int check_passengers(int* iPassengers, Flight fFlight, char* arg) {
  *  Return: int
  **/
 int check_size(int iSize) {
-	if (iSize < 0) {
-		printf("invalid passenger number\n");
-		return FALSE;
-	}
-	return TRUE;
+	if (iSize > 0)
+		return TRUE;
+	printf("invalid passenger number\n");
+	return FALSE;
 }
 
 /**
@@ -1442,4 +1440,3 @@ int main () {
  * ta na funcao pa listar as reservas. se der wrong answer pode ser por esse malloc desnecessario
  * exceder o limite de memoria que posso usar. bom teste e tirar o memcheck e ver se o erro passa
  * a segmentation fault */
-
