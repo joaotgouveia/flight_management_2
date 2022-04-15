@@ -21,6 +21,8 @@
 #define DATESTART IDAP*2
 #define CATDATETIME DATE-3+TIME-1
 #define CATDATE DATE-2
+#define FIRSTYEAR 2022
+#define YEARDAYS 365
 /* Arg related values */
 #define ARGSTART 2
 #define ARGSIZE 65535
