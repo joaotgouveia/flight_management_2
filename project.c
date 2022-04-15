@@ -822,6 +822,8 @@ void free_all(Link head) {
  **/
 void free_flights() {
 	int i;
+	if (iCurrentFlights == 0)
+		return;
 	for (i = 0; i < iCurrentFlights; i++)
 		free_all(fFlights[i].headRes);
 }
@@ -837,10 +839,10 @@ void free_flights() {
 void* check_mem(int iSize) {
 	void* ptr = malloc(iSize);
 	if (ptr == NULL) {
-		printf("no memory\n");
+		printf("No memory\n");
 		free(ptr);
 		free_flights();
-		exit(EXIT_FAILURE);
+		exit(0);
 	}
 	return ptr;
 }
@@ -868,30 +870,16 @@ Link new_link(char* cIdRes, int iIdLen, int iResSize) {
 /**
  * Function: copy_linked_list
  * --------------------
- * Copies reservations from a
+ * Copies reservation ids from a
  * linked list.
  *
  *  Return: void
  **/
-void copy_linked_list(Reservation* rArray, Link head) {
+void copy_linked_list(char** rArray, Link head) {
 	int i = 0;
 	Link link;
 	for (link = head, i = 0; link != NULL; link = link->next, i++)
-		rArray[i] = *link->res;
-}
-
-/**
- * Function: get_tail
- * --------------------
- * Finds the tail
- * of a linked list.
- *
- *  Return: Link
- **/
-Link get_tail(Link head) {
-	Link tail;
-	for (tail = head; tail->next != NULL; tail = tail->next);
-	return tail;
+		rArray[i] = link->res->id;
 }
 
 /**
@@ -901,76 +889,8 @@ Link get_tail(Link head) {
  *
  *  Return: void
  **/
-void print_rs(Reservation rRes) {
-	printf("%s %d\n", rRes.id, rRes.size); 
-}
-
-/**
- * Function: less_rs
- * --------------------
- * Compares two reservations
- * through their Id's.
- *
- *  Return: int
- **/
-int less_rs(Reservation rReservation1, Reservation rReservation2) {
-	return strcmp(rReservation1.id, rReservation2.id) <= 0;
-}
-
-/**
- * Function: swap_rs
- * --------------------
- * Swaps two reservations in 
- * an array.
- *
- *  Return: void
- **/
-void swap_rs(Reservation* rArray, int i, int j) {
-	Reservation rAux;
-	if (i == j)
-		return;
-	rAux = rArray[i];
-	rArray[i] = rArray[j];
-	rArray[j] = rAux;
-}
-
-/**
- * Function: partition_rs
- * --------------------
- * Calculates and returns a partition
- * for quicksort.
- *
- *  Return: int
- **/
-int partition_rs(Reservation* rArray, int iFirst, int iLast) {
-	int iPivot = iFirst, i = iFirst, j = iLast;
-	while (i < j) {
-		while (less_rs(rArray[i], rArray[iPivot]) && i < iLast)
-			i++;
-		while (!less_rs(rArray[j], rArray[iPivot]))
-			j--;
-		if (i < j)
-			swap_rs(rArray, i, j);
-	}
-	swap_rs(rArray, iPivot, j);
-	return j;
-}
-
-/**
- * Function: quicksort_rs
- * --------------------
- *  Quicksort sorting algorithm
- *  applied to reservation struct.
- *
- *  Return: void
- **/
-void quicksort_rs(Reservation* rArray, int iFirst, int iLast) {
-	int iPartition;
-	if (iFirst < iLast) {
-		iPartition = partition_rs(rArray, iFirst, iLast);
-		quicksort_rs(rArray, iFirst, iPartition-1);
-		quicksort_rs(rArray, iPartition+1, iLast);
-	}
+void print_rs(Reservation* rRes) {
+	printf("%s %d\n", rRes->id, rRes->size); 
 }
 
 /**
@@ -1009,19 +929,21 @@ int find_fl(char cId[IDFL], Date dDate) {
 }
 
 /**
- * Function: find_rs
+ * Function: used_rs
  * --------------------
- * Finds the reservation
- * corresponding to an id.
+ *  Checks id a reservation id
+ *  has been used.
  *
  *  Return: int
  **/
-Link find_rs(Link head, char* cId) {
+int used_rs(Link head, char* cId) {
 	Link link;
+	if (head == NULL)
+		return FALSE;
 	for (link = head; link != NULL; link = link->next)
 		if (strcmp(link->res->id, cId) == 0)
-			return link;
-	return NULL;
+			return TRUE;
+	return FALSE;
 }
 
 /**
@@ -1050,7 +972,7 @@ int invalid_idrs(char cIdChar) {
  *  Return: int
  **/
 int used_idfl(Flight fFlight, char* cId) {
-	if (find_rs(fFlight.headRes, cId) != NULL) {
+	if (used_rs(fFlight.headRes, cId)) {
 		printf("%s: flight reservation already used\n", cId);
 		return TRUE;
 	}
@@ -1193,17 +1115,53 @@ int check_size(int iSize) {
  *
  *  Return: void
  **/
-void list_rs(Link lHead, int iLen) {
-	int i;
-	Reservation* rArray;
-	if (lHead == NULL)
+void list_rs(Link head) {
+	Link l;
+	if (head == NULL)
 		return;
-	rArray = (Reservation*) check_mem(sizeof(Reservation)*iLen);
-	copy_linked_list(rArray, lHead);
-	quicksort_rs(rArray, 0, iLen-1);
-	for (i = 0; i < iLen; i++)
-		print_rs(rArray[i]);
-	free(rArray);
+	for (l = head; l != NULL; l = l->next)
+		print_rs(l->res);
+}
+
+/**
+ * Function: less_ln
+ * --------------------
+ *  Compares two links
+ *  through their ids.
+ *
+ *  Return: Link
+ **/
+int less_ln(Link l1, Link l2) {
+	return strcmp(l1->res->id, l2->res->id) < 0;
+}
+
+/**
+ * Function: insert_link
+ * --------------------
+ * Inserts a new link in a 
+ * ordered linked list 
+ * according to its id.
+ *
+ *  Return: Link
+ **/
+Link insert_link(Link head, Link new) {
+	Link l, prev;
+	if (less_ln(new, head)) {
+		new->next = head;
+		return new;
+	}
+	else if (head->next == NULL) {
+		head->next = new;
+		return head;
+	}
+	for (l = head->next, prev = head; l != NULL; prev = l, l = l->next)
+		if (less_ln(prev, new) && less_ln(new, l)) {
+			prev->next = new;
+			new->next = l;
+			return head;
+		}
+	prev->next = new;
+	return head;
 }
 
 /**
@@ -1214,17 +1172,16 @@ void list_rs(Link lHead, int iLen) {
  *
  *  Return: void
  **/
-void new_rs(int iIndex, char* cId, int iIdLen, int iPassengers) {
-	Link lTail, lNewLink;
+void new_rs(int i, char* cId, int iIdLen, int iPassengers) {
+	Link lNewLink;
 	lNewLink = new_link(cId, iIdLen, iPassengers);
-	fFlights[iIndex].totRes += lNewLink->res->size;
-	fFlights[iIndex].listLen++;
-	if (fFlights[iIndex].headRes == NULL) {
-		fFlights[iIndex].headRes = lNewLink;
+	fFlights[i].totRes += lNewLink->res->size;
+	fFlights[i].listLen++;
+	if (fFlights[i].headRes == NULL) {
+		fFlights[i].headRes = lNewLink;
 		return;
 	}
-	lTail = get_tail(fFlights[iIndex].headRes);
-	lTail->next = lNewLink;
+	fFlights[i].headRes = insert_link(fFlights[i].headRes, lNewLink);
 }
 
 /**
@@ -1241,7 +1198,7 @@ void show_rs(int iValidFl, int iIndex, char* cIdFl, Date dDate) {
 		return;
 	if (invalid_date(dDate))
 		return;
-	list_rs(fFlights[iIndex].headRes, fFlights[iIndex].listLen);
+	list_rs(fFlights[iIndex].headRes);
 }
 
 /**
@@ -1435,8 +1392,3 @@ int main () {
 	free_flights();
 	return 0;
 }
-
-/* Atencao ao malloc do array de reservas substituido por check mem.
- * ta na funcao pa listar as reservas. se der wrong answer pode ser por esse malloc desnecessario
- * exceder o limite de memoria que posso usar. bom teste e tirar o memcheck e ver se o erro passa
- * a segmentation fault */
