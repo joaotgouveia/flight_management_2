@@ -51,6 +51,8 @@ void arrivals(char* cId);
 void advance_date(char* arg);
 
 /* Global variables */
+const int mDays[] =	/* days per month (jan=1) */
+	{ 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 Airport aAirports[MAXAIRPORTS]; /* Airport array */
 Flight fFlights[MAXFLIGHTS]; /* Flight array */
 int iCurrentAirports, iCurrentFlights; /* Airport and flight counters */
@@ -424,26 +426,30 @@ int same_date(Date dDate1, Date dDate2) {
 }
 
 /**
+ * Function: convert_date
+ * --------------------
+ * COnverts a date to int.
+ *
+ *  Return: int
+ **/
+int convert_date(int y, int m, int d) {
+	return (y-FIRSTYEAR)*YEARDAYS+mDays[m-1]+d-1;
+}
+
+/**
  * Function: invalid_date
  * --------------------
  * Checks if a date is invalid.
  *
  *  Return: int
  **/
-int invalid_date(Date dDate) {
-	int iYear;
-	char cToday[CATDATE], cDate[CATDATE], cFuture[CATDATE];
-	sprintf(cToday, "%s%s%s", today.year, today.month, today.day);
-	sprintf(cDate, "%s%s%s", dDate.year, dDate.month, dDate.day);
-	/* Converting year to int for easier math */
-	iYear = atoi(today.year);
-	iYear++;
-	sprintf(cFuture, "%d%s%s", iYear, today.month, today.day);
-	if (strcmp(cDate, cFuture) > 0 || strcmp(cDate, cToday) < 0) {
-		printf("invalid date\n");
-		return TRUE;
-	}
-	return FALSE;
+int invalid_date(Date d) {
+	int iDate = convert_date(atoi(d.year), atoi(d.month), atoi(d.day));
+	if (!(iDate < convert_date(atoi(today.year), atoi(today.month), atoi(today.day)) ||
+		iDate >  convert_date(atoi(today.year)+1, atoi(today.month), atoi(today.day))))
+		return FALSE;
+	printf("invalid date\n");
+	return TRUE;
 }
 
 /**
