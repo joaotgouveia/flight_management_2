@@ -23,6 +23,13 @@ typedef struct Node {
 } *Link;
 typedef struct Node Node;
 
+typedef struct HashNode {
+	char* id;
+	int iFl;
+	struct HashNode* next;
+} *Chain;
+typedef struct HashNode HashNode;
+
 typedef struct {
 	char id[IDAP];
 	char country[COUNTRY];
@@ -42,5 +49,4 @@ typedef struct {
 	int capacity;
 	Link headRes;
 	int totRes;
-	int listLen;
 } Flight;

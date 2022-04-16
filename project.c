@@ -4,7 +4,6 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include<ctype.h>
 #include"const.h"
 #include"structs.h"
 
@@ -57,6 +56,14 @@ Airport aAirports[MAXAIRPORTS]; /* Airport array */
 Flight fFlights[MAXFLIGHTS]; /* Flight array */
 int iCurrentAirports, iCurrentFlights; /* Airport and flight counters */
 Date today = {"01", "01", "2022"}; /* Program starting date */
+
+int is_upper_char(char c) {
+	return (c >= 'A' && c <= 'Z');
+}
+
+int is_digit_char(char d) {
+	return (d >= '0' && d <= '9');
+}
 
 /**
  * Function: less_ap
@@ -315,10 +322,10 @@ void print_fl(Flight fFlight, int iMode) {
  *  Return: int
  **/
 int invalid_idfl(char cChar, int iIndex) {
-	if (isupper(cChar) && iIndex < 2) {
+	if (is_upper_char(cChar) && iIndex < 2) {
 		return FALSE;
 	}
-	return (!isdigit(cChar) || iIndex < 2);
+	return (!is_digit_char(cChar) || iIndex < 2);
 }
 
 /**
@@ -573,7 +580,7 @@ void add_ap(char* arg) {
 	int i;
 	Airport aNewAirport;
 	for (i = 0; i < IDAP-1; i++) {
-		if (!isupper(arg[i])) {
+		if (!is_upper_char(arg[i])) {
 			printf("invalid airport ID\n");
 			return;
 		}
@@ -732,7 +739,6 @@ void add_fl(char* arg) {
 	/* Initializing linked list */
 	fNewFlight.headRes = NULL;
 	fNewFlight.totRes = 0;
-	fNewFlight.listLen = 0;
 	/* Adding one more flight to the departure counter */
 	aAirports[iDepartureIndex].departures++;
 	/* Adding flight to flight list */
@@ -784,6 +790,7 @@ void advance_date(char* arg) {
 }
 
 /* --------------------- Start of second project ---------------------- */
+
 /**
  * Function: free_link
  * --------------------
@@ -829,6 +836,38 @@ void free_flights() {
 }
 
 /**
+ * Function: free_chains
+ * --------------------
+ * Frees an entire 
+ * chain linked list.
+ *
+ *  Return: void
+ **/
+void free_chains(Chain head) {
+	Chain chain, prev;
+	if (head == NULL)
+		return;
+	for (chain = head->next, prev = head; chain != NULL; prev = chain, chain = chain->next)
+		free(prev);
+	free(prev);
+}
+
+/**
+ * Function: free_hash
+ * --------------------
+ * Frees an hash table.
+ *
+ *  Return: void
+ **/
+void free_hash(Chain* table) {
+	int i;
+	if (iCurrentFlights != 0)
+		for (i = 0; i < TABLESIZE; i++)
+			free_chains(table[i]);
+	free(table);
+}
+
+/**
  * Function: check_mem
  * --------------------
  * Checks for available memory
@@ -836,13 +875,13 @@ void free_flights() {
  *
  *  Return: void
  **/
-void* check_mem(int iSize) {
+void* check_mem(Chain* t, unsigned int iSize) {
 	void* ptr = malloc(iSize);
 	if (ptr == NULL) {
 		printf("No memory\n");
-		free(ptr);
+		free_hash(t);
 		free_flights();
-		exit(0);
+		exit(TOO_MUCH_MEMORY);
 	}
 	return ptr;
 }
@@ -854,12 +893,12 @@ void* check_mem(int iSize) {
  * for the reservations
  * linked list.
  *
- *  Return: void
+ *  Return: Link
  **/
-Link new_link(char* cIdRes, int iIdLen, int iResSize) {
-	Link link = (Link) check_mem(sizeof(Node));
-	link->res = (Reservation*) check_mem(sizeof(Reservation));
-	link->res->id = (char*) check_mem(sizeof(char)*(iIdLen+1));
+Link new_link(Chain* t, char* cIdRes, int iIdLen, int iResSize) {
+	Link link = (Link) check_mem(t, sizeof(Node));
+	link->res = (Reservation*) check_mem(t, sizeof(Reservation));
+	link->res->id = (char*) check_mem(t, sizeof(char)*(iIdLen+1));
 	strncpy(link->res->id, cIdRes, iIdLen);
 	link->res->id[iIdLen] = '\0';
 	link->res->size = iResSize;
@@ -868,18 +907,95 @@ Link new_link(char* cIdRes, int iIdLen, int iResSize) {
 }
 
 /**
- * Function: copy_linked_list
+ * Function: new_chain
  * --------------------
- * Copies reservation ids from a
- * linked list.
+ * Creates a new chain
+ * for the hash table.
+ *
+ *  Return: Chain
+ **/
+Chain new_chain(Chain* t, char* id, int index) {
+	Chain chain = (Chain) check_mem(t, sizeof(HashNode));
+	chain->id = id;
+	chain->iFl = index;
+	chain->next = NULL;
+	return chain;
+}
+
+/**
+ * Function: hash
+ * --------------------
+ *  String hash funtion.
+ *
+ *  Return: int
+ **/
+int hash(char* id) {
+	int h, a = 31415, b = 27183;
+	for (h = 0; *id != '\0'; id++, a = a*b % (TABLESIZE-1))
+		h = (a*h + *id) % TABLESIZE;
+	return h;
+}
+
+/**
+ * Function: insert_chain
+ * --------------------
+ * Inserts a new chain in a 
+ * linked list;
+ *
+ *  Return: Chain
+ **/
+Chain insert_chain(Chain head, Chain newChain) {
+	if (head == NULL)
+		return newChain;
+	newChain->next = head;
+	return newChain;
+}
+
+/**
+ * Function: insert_table
+ * --------------------
+ * Inserts an id in a hash
+ * table.
  *
  *  Return: void
  **/
-void copy_linked_list(char** rArray, Link head) {
-	int i = 0;
-	Link link;
-	for (link = head, i = 0; link != NULL; link = link->next, i++)
-		rArray[i] = link->res->id;
+void insert_table(Chain* table, char* id, int index) {
+	int i = hash(id);
+	Chain newChain = new_chain(table, id, index);
+	table[i] = insert_chain(table[i], newChain);
+}
+
+/**
+ * Function: chain_search
+ * --------------------
+ * Looks for an id in a chain
+ * linked list.
+ *
+ *  Return: int
+ **/
+int chain_search(Chain head, char* id) {
+	Chain chain;
+	if (head == NULL)
+		return FALSE;
+	for (chain = head; chain != NULL; chain = chain->next)
+		if (strcmp(chain->id, id) == 0)
+			return TRUE;
+	return FALSE;
+}
+
+/**
+ * Function: table_search
+ * --------------------
+ * Looks for an id in an
+ * hash table.
+ *
+ *  Return: int
+ **/
+int table_search(Chain* table, char* id) {
+	int iStatus = chain_search(table[hash(id)], id);
+	if (iStatus)
+		printf("%s: flight reservation already used\n", id);
+	return iStatus;
 }
 
 /**
@@ -929,24 +1045,6 @@ int find_fl(char cId[IDFL], Date dDate) {
 }
 
 /**
- * Function: used_rs
- * --------------------
- *  Checks id a reservation id
- *  has been used.
- *
- *  Return: int
- **/
-int used_rs(Link head, char* cId) {
-	Link link;
-	if (head == NULL)
-		return FALSE;
-	for (link = head; link != NULL; link = link->next)
-		if (strcmp(link->res->id, cId) == 0)
-			return TRUE;
-	return FALSE;
-}
-
-/**
  * Function: invalid_idrs
  * --------------------
  * Checks if a reservation
@@ -955,28 +1053,10 @@ int used_rs(Link head, char* cId) {
  *  Return: int
  **/
 int invalid_idrs(char cIdChar) {
-	if (!isupper(cIdChar) && !isdigit(cIdChar)) {
-		printf("invalid reservation code\n");
-		return TRUE;
-	}
-	return FALSE;
-}
-
-/**
- * Function: used_idfl
- * --------------------
- * Checks if a reservation
- * ID was already used in
- * a flight.
- *
- *  Return: int
- **/
-int used_idfl(Flight fFlight, char* cId) {
-	if (used_rs(fFlight.headRes, cId)) {
-		printf("%s: flight reservation already used\n", cId);
-		return TRUE;
-	}
-	return FALSE;
+	if (is_upper_char(cIdChar) || is_digit_char(cIdChar))
+		return FALSE;
+	printf("invalid reservation code\n");
+	return TRUE;
 }
 
 /**
@@ -987,18 +1067,9 @@ int used_idfl(Flight fFlight, char* cId) {
  *
  *  Return: int
  **/
-int used_id(char* arg, int iIdLen) {
-	int i, iStatus = FALSE;
-	char* cId = (char*) check_mem(sizeof(char)*(iIdLen+1));
-	strncpy(cId, arg, iIdLen);
-	cId[iIdLen] = '\0';
-	for (i = 0; i < iCurrentFlights; i++)
-		if (used_idfl(fFlights[i], cId)) {
-			iStatus = TRUE;
-			break;
-		}
-	free(cId);
-	return iStatus;
+int used_id(char* arg, Chain* table, int iIdLen) {
+	arg[iIdLen] = '\0';
+	return table_search(table, arg);
 }
 
 /**
@@ -1049,9 +1120,8 @@ int check_flight(char* cId, int* iInd, Date* dDate, int* iOffset, char* arg) {
 	read_date(dDate, arg);
 	*iOffset += DATE;
 	*iInd = find_fl(cId, *dDate);
-	if (*iInd == NOTFOUND) {
+	if (*iInd == NOTFOUND)
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -1068,11 +1138,10 @@ int check_idrs(int* iSize, char* arg) {
 	for (*iSize = 0; arg[*iSize] != ' ' && arg[*iSize] != '\t'; (*iSize)++)
 		if (invalid_idrs(arg[*iSize]))
 			return FALSE;
-	if (*iSize < 10) {
-		printf("invalid reservation code\n");
-		return FALSE;
-	}
-	return TRUE;
+	if (*iSize >= 10)
+		return TRUE;
+	printf("invalid reservation code\n");
+	return FALSE;
 }
 
 /**
@@ -1172,11 +1241,11 @@ Link insert_link(Link head, Link new) {
  *
  *  Return: void
  **/
-void new_rs(int i, char* cId, int iIdLen, int iPassengers) {
+void new_rs(Chain* table, int i, char* cId, int iIdLen, int iPassengers) {
 	Link lNewLink;
-	lNewLink = new_link(cId, iIdLen, iPassengers);
+	lNewLink = new_link(table, cId, iIdLen, iPassengers);
 	fFlights[i].totRes += lNewLink->res->size;
-	fFlights[i].listLen++;
+	insert_table(table, lNewLink->res->id, i);
 	if (fFlights[i].headRes == NULL) {
 		fFlights[i].headRes = lNewLink;
 		return;
@@ -1210,21 +1279,21 @@ void show_rs(int iValidFl, int iIndex, char* cIdFl, Date dDate) {
  *
  *  Return: void
  **/
-void add_rs(int iValidFl, int iIndex, char* cIdFl, Date dDate, char* arg) {
+void add_rs(Chain* table, int iValFl, int i, char* cIdFl, Date d, char* arg) {
 	int iIdLen, iPassengers;
 	if (!check_idrs(&iIdLen, arg))
 		return;
-	if (!valid_fl(cIdFl, iValidFl))
+	if (!valid_fl(cIdFl, iValFl))
 		return;
-	if (used_id(arg, iIdLen))
+	if (used_id(arg, table, iIdLen))
 		return;
-	if (!check_passengers(&iPassengers, fFlights[iIndex], arg+iIdLen+1))
+	if (!check_passengers(&iPassengers, fFlights[i], arg+iIdLen+1))
 		return;
-	if (invalid_date(dDate))
+	if (invalid_date(d))
 		return;
 	if (!check_size(iPassengers))
 		return;
-	new_rs(iIndex, arg, iIdLen, iPassengers);
+	new_rs(table, i, arg, iIdLen, iPassengers);
 }
 
 /**
@@ -1235,7 +1304,7 @@ void add_rs(int iValidFl, int iIndex, char* cIdFl, Date dDate, char* arg) {
  *
  *  Return: void
  **/
-void manage_reservations(char* arg) {
+void manage_reservations(char* arg, Chain* table) {
 	int iInd, iOffset, iValidFl, iArgLen = strlen(arg);
 	char cIdFl[IDFL];
 	Date dDate;
@@ -1243,7 +1312,53 @@ void manage_reservations(char* arg) {
 	if (iArgLen == iOffset)
 		show_rs(iValidFl, iInd, cIdFl, dDate);
 	else
-		add_rs(iValidFl, iInd, cIdFl, dDate, arg+iOffset);
+		add_rs(table, iValidFl, iInd, cIdFl, dDate, arg+iOffset);
+}
+
+/**
+ * Function: remove_table
+ * --------------------
+ * Removes a reservation from
+ * an hash table.
+ *
+ *  Return: Chain*
+ **/
+Chain* remove_table(Chain* table, char* id) {
+	int i = hash(id);
+	Chain chain, prev;
+	if (table[i] == NULL)
+		return table;
+	for (chain = table[i], prev = NULL; chain != NULL; prev = chain, chain = chain->next)
+		if (strcmp(chain->id, id) == 0) {
+			if (chain == table[i])
+				table[i] = table[i]->next;
+			else
+				prev->next = chain->next;
+			free(chain);
+			return table;
+		}
+	return table;
+}
+
+/**
+ * Function: find_flIndex
+ * --------------------
+ * Finds the index of a flight using
+ * an hash table.
+ *
+ *  Return: int
+ **/
+int find_flIndex(Chain* table, char* id) {
+	int h = hash(id), i = NOTFOUND;
+	Chain chain;
+	if (table[h] == NULL)
+		return NOTFOUND;
+	for (chain = table[h]; chain != NULL; chain = chain->next)
+		if (strcmp(chain->id, id) == 0) {
+			i = chain->iFl;
+			break;
+		}
+	return i;
 }
 
 /**
@@ -1256,19 +1371,20 @@ void manage_reservations(char* arg) {
  *
  *  Return: int
  **/
-int remove_rs(Flight* fFlight, char* cId) {
+int remove_rs(Chain* table, char* cId) {
+	int i = find_flIndex(table, cId);
 	Link link, prev;
-	if (fFlight->headRes == NULL)
+	if (i == NOTFOUND)
 		return FALSE;
-	for (link = fFlight->headRes, prev = NULL; link != NULL; prev = link, link = link->next)
+	for (link = fFlights[i].headRes, prev = NULL; link != NULL; prev = link, link = link->next)
 		if (strcmp(link->res->id, cId) == 0) {
-			if (link == fFlight->headRes)
-				fFlight->headRes = fFlight->headRes->next;
+			if (link == fFlights[i].headRes)
+				fFlights[i].headRes = fFlights[i].headRes->next;
 			else
 				prev->next = link->next;
-			fFlight->totRes -= link->res->size;
-			fFlight->listLen--;
+			fFlights[i].totRes -= link->res->size;
 			free_link(link);
+			remove_table(table, cId);
 			return TRUE;
 		}  
 	return FALSE;
@@ -1281,11 +1397,9 @@ int remove_rs(Flight* fFlight, char* cId) {
  *
  *  Return: void
  **/
-void delete_rs(char* cId) {
-	int i;
-	for (i = 0; i < iCurrentFlights; i++)
-		if (remove_rs(fFlights+i, cId))
-			return;
+void delete_rs(Chain* table, char* cId) {
+	if (remove_rs(table, cId))
+		return;
 	printf("not found\n");
 }
 
@@ -1315,10 +1429,14 @@ int find_flid(int* i, char* cId) {
  *
  *  Return: void
  **/
-void remove_fl(int iIndex) {
+void remove_fl(Chain* table, int iInd) {
 	int i;
-	free_all(fFlights[iIndex].headRes);
-	for (i = iIndex+1; i < iCurrentFlights; i++)
+	Link l;
+	if (fFlights[iInd].headRes != NULL)
+		for (l = fFlights[iInd].headRes; l != NULL; l = l->next)
+			table = remove_table(table, l->res->id);
+	free_all(fFlights[iInd].headRes);
+	for (i = iInd+1; i < iCurrentFlights; i++)
 		fFlights[i-1] = fFlights[i];
 	iCurrentFlights--;
 }
@@ -1330,14 +1448,14 @@ void remove_fl(int iIndex) {
  *
  *  Return: void
  **/
-void delete_fl(char* cId) {
+void delete_fl(Chain* table, char* cId) {
 	int i;
 	if (!find_flid(&i, cId)) {
 		printf("not found\n");
 		return;
 	}
 	do
-		remove_fl(i);
+		remove_fl(table, i);
 	while (find_flid(&i, cId));
 }
 
@@ -1348,21 +1466,24 @@ void delete_fl(char* cId) {
  *
  *  Return: void
  **/
-void delete_fl_or_rs(char* cId) {
+void delete_fl_or_rs(char* cId, Chain* table) {
 	int iLen = strlen(cId) - 1;
 	cId[iLen] = '\0';
 	if (iLen < 10)
-		delete_fl(cId);
+		delete_fl(table, cId);
 	else
-		delete_rs(cId);
+		delete_rs(table, cId);
 }
 
 int main () {
 	char arg[ARGSIZE];
-	do {
-		fgets(arg, sizeof(char)*ARGSIZE, stdin);
+	Chain* hashTable = (Chain*) calloc(TABLESIZE, sizeof(Chain));
+	while (fgets(arg, sizeof(char)*ARGSIZE, stdin)) {
 		switch (arg[0]) {
-			case 'q': break;
+			case 'q': 
+				free_hash(hashTable);
+				free_flights();
+				return 0;
 			case 'a': add_ap(arg+ARGSTART);
 				break;
 			case 'l':
@@ -1383,12 +1504,11 @@ int main () {
 				break;
 			case 't': advance_date(arg+ARGSTART);
 				break;
-			case 'r': manage_reservations(arg+ARGSTART);
+			case 'r': manage_reservations(arg+ARGSTART, hashTable);
 				break;
-			case 'e': delete_fl_or_rs(arg+ARGSTART);
+			case 'e': delete_fl_or_rs(arg+ARGSTART, hashTable);
 				break;
 		}
-	} while (arg[0] != 'q');
-	free_flights();
+	}
 	return 0;
 }

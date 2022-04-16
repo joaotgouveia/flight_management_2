@@ -32,3 +32,7 @@
 #define NOTFOUND -1
 /* Data structures */
 #define TUPLE 2
+/* Hash table related values */
+#define TABLESIZE 20047
+/* Exit codes */
+#define TOO_MUCH_MEMORY 137
