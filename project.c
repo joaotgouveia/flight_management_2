@@ -868,22 +868,32 @@ void free_hash(Chain* table) {
 }
 
 /**
+ * Function: free_program
+ * --------------------
+ * Frees all allocated memory.
+ *
+ *  Return: void
+ **/
+void free_program(Chain* t) {
+	free_hash(t);
+	free_flights();
+}
+
+/**
  * Function: check_mem
  * --------------------
  * Checks for available memory
  * before allocating.
  *
- *  Return: void
+ *  Return: void*
  **/
 void* check_mem(Chain* t, unsigned int iSize) {
 	void* ptr = malloc(iSize);
-	if (ptr == NULL) {
-		printf("No memory\n");
-		free_hash(t);
-		free_flights();
-		exit(TOO_MUCH_MEMORY);
-	}
-	return ptr;
+	if (ptr != NULL)
+		return ptr;
+	printf("No memory\n");
+	free_program(t);
+	exit(TOO_MUCH_MEMORY);
 }
 
 /**
@@ -1081,11 +1091,10 @@ int used_id(char* arg, Chain* table, int iIdLen) {
  *  Return: int
  **/
 int invalid_passengers(Flight fFlight, int iResSize) {
-	if (iResSize + fFlight.totRes > fFlight.capacity) {
-		printf("too many reservations\n");
-		return TRUE;
-	}
-	return FALSE;
+	if (iResSize + fFlight.totRes <= fFlight.capacity)
+		return FALSE;
+	printf("too many reservations\n");
+	return TRUE;
 }
 
 /**
@@ -1097,11 +1106,10 @@ int invalid_passengers(Flight fFlight, int iResSize) {
  *  Return: int
  **/
 int valid_fl(char* cId, int iValidFl) {
-	if (!iValidFl) {
-		printf("%s: flight does not exist\n", cId);
-		return FALSE;
-	}
-	return TRUE;
+	if (iValidFl)
+		return TRUE;
+	printf("%s: flight does not exist\n", cId);
+	return FALSE;
 }
 
 /**
@@ -1198,7 +1206,7 @@ void list_rs(Link head) {
  *  Compares two links
  *  through their ids.
  *
- *  Return: Link
+ *  Return: int
  **/
 int less_ln(Link l1, Link l2) {
 	return strcmp(l1->res->id, l2->res->id) < 0;
@@ -1246,11 +1254,10 @@ void new_rs(Chain* table, int i, char* cId, int iIdLen, int iPassengers) {
 	lNewLink = new_link(table, cId, iIdLen, iPassengers);
 	fFlights[i].totRes += lNewLink->res->size;
 	insert_table(table, lNewLink->res->id, i);
-	if (fFlights[i].headRes == NULL) {
+	if (fFlights[i].headRes == NULL)
 		fFlights[i].headRes = lNewLink;
-		return;
-	}
-	fFlights[i].headRes = insert_link(fFlights[i].headRes, lNewLink);
+	else
+		fFlights[i].headRes = insert_link(fFlights[i].headRes, lNewLink);
 }
 
 /**
@@ -1411,7 +1418,7 @@ void delete_rs(Chain* table, char* cId) {
  * if successeful and stores
  * it's index in i.
  *
- *  Return: void
+ *  Return: int
  **/
 int find_flid(int* i, char* cId) {
 	for (*i = 0; *i < iCurrentFlights; (*i)++)
@@ -1475,14 +1482,14 @@ void delete_fl_or_rs(char* cId, Chain* table) {
 		delete_rs(table, cId);
 }
 
+
+
 int main () {
 	char arg[ARGSIZE];
 	Chain* hashTable = (Chain*) calloc(TABLESIZE, sizeof(Chain));
 	while (fgets(arg, sizeof(char)*ARGSIZE, stdin)) {
 		switch (arg[0]) {
-			case 'q': 
-				free_hash(hashTable);
-				free_flights();
+			case 'q': free_program(hashTable);
 				return 0;
 			case 'a': add_ap(arg+ARGSTART);
 				break;
@@ -1510,5 +1517,6 @@ int main () {
 				break;
 		}
 	}
+	free_program(hashTable);
 	return 0;
 }
