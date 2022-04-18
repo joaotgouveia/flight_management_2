@@ -1443,6 +1443,11 @@ void remove_fl(Chain* table, int iInd) {
 		for (l = fFlights[iInd].headRes; l != NULL; l = l->next)
 			table = remove_table(table, l->res->id);
 	free_all(fFlights[iInd].headRes);
+	for (i = 0; i < iCurrentAirports; i++)
+		if (strcmp(fFlights[iInd].departure, aAirports[i].id)) {
+			aAirports[i].departures--;
+			break;
+		}
 	for (i = iInd+1; i < iCurrentFlights; i++)
 		fFlights[i-1] = fFlights[i];
 	iCurrentFlights--;
@@ -1481,8 +1486,6 @@ void delete_fl_or_rs(char* cId, Chain* table) {
 	else
 		delete_rs(table, cId);
 }
-
-
 
 int main () {
 	char arg[ARGSIZE];
