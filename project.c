@@ -1490,6 +1490,12 @@ void delete_fl_or_rs(char* cId, Chain* table) {
 int main () {
 	char arg[ARGSIZE];
 	Chain* hashTable = (Chain*) calloc(TABLESIZE, sizeof(Chain));
+	/* At this point no memory has been allocated besides the hash table, so if
+	 * allocation fails we can safely exit the program without memory leaks. */
+	if (hashTable == NULL) {
+		printf("No memory");
+		exit(TOO_MUCH_MEMORY);
+	}
 	while (fgets(arg, sizeof(char)*ARGSIZE, stdin)) {
 		switch (arg[0]) {
 			case 'q': free_program(hashTable);
